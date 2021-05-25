@@ -1,5 +1,7 @@
 import os
 import pickle
+import threading
+from typing import Optional
 
 import numpy as np
 
@@ -21,6 +23,7 @@ def read_array(
     key: str,
     storage: StorageProvider,
     array_slice: slice = slice(None),
+    multi_threaded: Optional[bool] = False,
 ) -> np.ndarray:
     """Read and join chunks into an array from storage.
 
@@ -39,23 +42,49 @@ def read_array(
 
     # TODO: read samples in parallel
     samples = []
-    for index, index_entry in enumerate(index_map[array_slice]):
-        _get_sample(
-            index=index,
-            key=key,
-            index_entry=index_entry,
-            storage=storage,
-            meta=meta,
-            samples=samples,
-        )
+    if multi_threaded:
+        threads = []
+        for index, index_entry in enumerate(index_map[array_slice]):
+            x = threading.Thread(
+                target=_get_sample, args=(index, key, index_entry, storage, meta, samples, multi_threaded)
+            )
+            threads.append(x)
+            x.start()
+        for index, thread in enumerate(threads):
+            thread.join()
+
+    else:
+        for index, index_entry in enumerate(index_map[array_slice]):
+            _get_sample(
+                index=index,
+                key=key,
+                index_entry=index_entry,
+                storage=storage,
+                meta=meta,
+                samples=samples,
+                multi_threaded=multi_threaded
+            )
 
     return np.array(samples)
 
 
-def _get_sample(index, key, index_entry, storage, meta, samples):
+def _get_sample(index, key, index_entry, storage, meta, samples, multi_threaded):
     chunks = []
-    for i, chunk_name in enumerate(index_entry["chunk_names"]):
-        _get_chunks(key, chunk_name, storage, chunks, index)
+    if multi_threaded:
+        threads = []
+        for i, chunk_name in enumerate(index_entry["chunk_names"]):
+            x = threading.Thread(
+                target=_get_chunks, args=(key, chunk_name, storage, chunks, index)
+            )
+            threads.append(x)
+            x.start()
+            # _get_chunks(key, chunk_name, storage, chunks, index)
+
+        for index, thread in enumerate(threads):
+            thread.join()
+    else:
+        for i, chunk_name in enumerate(index_entry["chunk_names"]):
+            _get_chunks(key, chunk_name, storage, chunks, index)
 
     combined_bytes = join_chunks(
         chunks,
