@@ -7,10 +7,13 @@ RUN mkdir /app
 WORKDIR /app
 
 RUN git clone https://github.com/activeloopai/Hub.git && \
-    pip install -r Hub/hub/requirements.txt && \
-    pip install -r Hub/hub/common.txt && \
-    pip install -r Hub/hub/tests.txt && \
-    pip install -r Hub/hub/plugins.txt
+    cd Hub && \
+    git checkout clean_for_release
+
+RUN pip install -r requirements/all-requirements.txt && \
+    pip install -r requirements/common.txt && \
+    pip install -r requirements/tests.txt && \
+    pip install -r requirements/plugins.txt
 
 WORKDIR /app/Hub
 

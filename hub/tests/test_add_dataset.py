@@ -37,15 +37,15 @@ def add_tfds(ds, tfds_name, split):
             # TODO handle strings
             # t = list(ex[col])
             # ex[col] = np.array([t])
-            if not isinstance(ex[col], np.ndarray):
-                print("Converting to array")
-                try:
-                    ds_hub[col].extend(np.array([ex[col]]))
-                except Exception as e:
-                    print(e)
-                    print("Didn't work converting to np.array")
-            else:
-                ds_hub[col].extend(ex[col])
+            # if not isinstance(ex[col], np.ndarray):
+            #     print("Converting to array")
+            #     try:
+            #         ds_hub[col].extend(np.array([ex[col]]))
+            #     except Exception as e:
+            #         print(e)
+            #         print("Didn't work converting to np.array")
+            # else:
+            ds_hub[col].extend(ex[col])
         n += 1
         # if n > 10:
         #     break
