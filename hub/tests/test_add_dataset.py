@@ -4,7 +4,7 @@ from tqdm import tqdm
 
 from hub import Dataset
 
-ds_root = "/Users/shashank/Projects/activeloop/activeloop/datasets/"
+ds_root = "s3://shashank-activeloop/"
 
 
 def add_tfds(tfds_name, split):
@@ -42,6 +42,8 @@ def add_tfds(tfds_name, split):
 
 def test_load_tfds():
     datasets_to_load = [
+        ["mnist", "train"],
+        ["mnist", "test"],
         ["beans", "test"],
         ["beans", "train"],
         ["beans", "validation"],
@@ -75,6 +77,8 @@ def test_load_tfds():
         print(split)
         try:
             add_tfds(dataset, split)
-            print("Successfuly loaded dataset")
+            print("Successfully loaded dataset")
         except Exception as e:
             print(e)
+
+test_load_tfds()
