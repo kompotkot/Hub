@@ -19,7 +19,7 @@ class S3Provider(StorageProvider):
         aws_session_token: Optional[str] = None,
         endpoint_url: Optional[str] = None,
         aws_region: Optional[str] = None,
-        max_pool_connections: Optional[int] = 10,
+        max_pool_connections: Optional[int] = 50,
         client=None,
     ):
         """Initializes the S3Provider
@@ -120,6 +120,7 @@ class S3Provider(StorageProvider):
             return resp["Body"].read()
         except botocore.exceptions.ClientError as err:
             if err.response["Error"]["Code"] == "NoSuchKey":
+                print(path)
                 raise KeyError(err)
             raise S3GetError(err)
         except Exception as err:

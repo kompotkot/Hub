@@ -1,6 +1,7 @@
+import concurrent.futures
+
 import boto3
 import botocore
-import numpy as np
 import tensorflow_datasets as tfds
 from tqdm import tqdm
 
@@ -126,28 +127,41 @@ def test_load_tfds():
         'vgg_face2',
         'visual_domain_decathlon'
     ]
+    datasets_to_load = ['mnist']
+    future_datasets = list()
+    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+        for dataset in datasets_to_load:
 
-    for dataset in datasets_to_load:
-
-        print("\n\n\n.....................")
-        print("Trying to convert dataset: " + str(dataset))
-        try:
-            # ds = tfds.load(tfds_name, split=split).batch(100)
-            ds = tfds.load(dataset)
-            for split in ds:
+            print("\n\n\n.....................")
+            print("Trying to convert dataset: " + str(dataset))
+            try:
+                # ds = tfds.load(tfds_name, split=split).batch(100)
+                ds = tfds.load(dataset)
+                for split in ds:
+                    try:
+                        if not check_dataset_exists(dataset + "_" + split):
+                            ds = tfds.load(dataset, split=split).batch(1000)
+                            print("Trying to convert dataset: " + str(dataset) + ", with split: " + str(split))
+                            future = executor.submit(add_tfds, ds, dataset, split)
+                            future_datasets.append(future)
+                            # add_tfds(ds, dataset, split)
+                            break
+                            # print("Successfully loaded dataset")
+                        else:
+                            print("dataset already exists with name: " + dataset + " and split: " + split)
+                    except Exception as e:
+                        print(e)
+            except Exception as e:
+                print(e)
+            print("\n\n\n.....................")
+            for future in concurrent.futures.as_completed(future_datasets):
                 try:
-                    if not check_dataset_exists(dataset + "_" + split):
-                        ds = tfds.load(dataset, split=split)
-                        print("Trying to convert dataset: " + str(dataset) + ", with split: " + str(split))
-                        add_tfds(ds, dataset, split).batch(100)
-                        print("Successfully loaded dataset")
-                    else:
-                        print("dataset already exists with name: " + dataset + " and split: " + split)
-                except Exception as e:
-                    print(e)
-        except Exception as e:
-            print(e)
-        print("\n\n\n.....................")
+                    data = future.result()
+                    print(data)
+                except Exception as exc:
+                    print(exc)
+                else:
+                    print("Dataset done")
 
 
 test_load_tfds()
