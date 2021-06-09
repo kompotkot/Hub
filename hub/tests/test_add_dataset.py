@@ -127,7 +127,7 @@ def test_load_tfds():
         'vgg_face2',
         'visual_domain_decathlon'
     ]
-    datasets_to_load = ['mnist']
+    datasets_to_load = ["caltech101"]
     future_datasets = list()
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         for dataset in datasets_to_load:
