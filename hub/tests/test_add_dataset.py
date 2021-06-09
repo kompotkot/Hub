@@ -2,6 +2,7 @@ import concurrent.futures
 
 import boto3
 import botocore
+import numpy as np
 import tensorflow_datasets as tfds
 from tqdm import tqdm
 
@@ -12,7 +13,7 @@ ds_root = "s3://shashank-activeloop/"
 
 
 def check_dataset_exists(dataset_name):
-    s3 = boto3.resource('s3')
+    s3 = boto3.resource("s3")
     try:
         s3.Object(bukcket_name, dataset_name + "/dataset_meta.json").load()
         return True
@@ -32,8 +33,10 @@ def add_tfds(ds, tfds_name, split):
             if col not in ds_hub.tensors:
                 print("Creating tensor with name: " + str(col))
                 ds_hub.create_tensor(col)
-            # if not isinstance(ex[col], np.ndarray):
-            #     ex[col] = np.array(ex[col])
+            if isinstance(ex[col], bytes) or isinstance(ex[col], bytearray):
+                continue
+            if not isinstance(ex[col], np.ndarray):
+                ex[col] = np.array([ex[col]])
             # if not isinstance(ex[col], bytes):
             # TODO handle strings
             # t = list(ex[col])
@@ -52,82 +55,86 @@ def add_tfds(ds, tfds_name, split):
         #     break
     ds_hub.storage.flush()
 
-    ...
+
+# def test_add_dataset():
+#     dataset = "caltech101"
+#     split = "train"
+#     ds = tfds.load(dataset, split=split)
+#     add_tfds(ds, dataset, split)
 
 
 def test_load_tfds():
     datasets_to_load = [
-        'beans',
-        'binary_alpha_digits',
-        'caltech101',
-        'caltech_birds2010',
-        'caltech_birds2011',
-        'cars196',
-        'cassava',
-        'cats_vs_dogs',
-        'chexpert',
-        'cifar10',
-        'cifar100',
-        'cifar10_1',
-        'cifar10_corrupted',
-        'citrus_leaves',
-        'cmaterdb',
-        'colorectal_histology',
-        'colorectal_histology_large',
-        'curated_breast_imaging_ddsm',
-        'cycle_gan',
-        'deep_weeds',
-        'diabetic_retinopathy_detection',
-        'dmlab',
-        'dtd',
-        'emnist',
-        'eurosat',
-        'fashion_mnist',
-        'food101',
-        'geirhos_conflict_stimuli',
-        'horses_or_humans',
-        'i_naturalist2017',
-        'imagenet2012',
-        'imagenet2012_corrupted',
-        'imagenet2012_real',
-        'imagenet2012_subset',
-        'imagenet_a',
-        'imagenet_r',
-        'imagenet_resized',
-        'imagenet_v2',
-        'imagenette',
-        'imagewang',
-        'kmnist',
-        'lfw',
-        'malaria',
-        'mnist',
-        'mnist_corrupted',
-        'omniglot',
-        'oxford_flowers102',
-        'oxford_iiit_pet',
-        'patch_camelyon',
-        'pet_finder',
-        'places365_small',
-        'plant_leaves',
-        'plant_village',
-        'plantae_k',
-        'quickdraw_bitmap',
-        'resisc45',
-        'rock_paper_scissors',
-        'siscore',
-        'smallnorb',
-        'so2sat',
-        'stanford_dogs',
-        'stanford_online_products',
-        'stl10',
-        'sun397',
-        'svhn_cropped',
-        'tf_flowers',
-        'uc_merced',
-        'vgg_face2',
-        'visual_domain_decathlon'
+        "beans",
+        "binary_alpha_digits",
+        "caltech101",
+        "caltech_birds2010",
+        "caltech_birds2011",
+        "cars196",
+        "cassava",
+        "cats_vs_dogs",
+        "chexpert",
+        "cifar10",
+        "cifar100",
+        "cifar10_1",
+        "cifar10_corrupted",
+        "citrus_leaves",
+        "cmaterdb",
+        "colorectal_histology",
+        "colorectal_histology_large",
+        "curated_breast_imaging_ddsm",
+        "cycle_gan",
+        "deep_weeds",
+        "diabetic_retinopathy_detection",
+        "dmlab",
+        "dtd",
+        "emnist",
+        "eurosat",
+        "fashion_mnist",
+        "food101",
+        "geirhos_conflict_stimuli",
+        "horses_or_humans",
+        "i_naturalist2017",
+        "imagenet2012",
+        "imagenet2012_corrupted",
+        "imagenet2012_real",
+        "imagenet2012_subset",
+        "imagenet_a",
+        "imagenet_r",
+        "imagenet_resized",
+        "imagenet_v2",
+        "imagenette",
+        "imagewang",
+        "kmnist",
+        "lfw",
+        "malaria",
+        "mnist",
+        "mnist_corrupted",
+        "omniglot",
+        "oxford_flowers102",
+        "oxford_iiit_pet",
+        "patch_camelyon",
+        "pet_finder",
+        "places365_small",
+        "plant_leaves",
+        "plant_village",
+        "plantae_k",
+        "quickdraw_bitmap",
+        "resisc45",
+        "rock_paper_scissors",
+        "siscore",
+        "smallnorb",
+        "so2sat",
+        "stanford_dogs",
+        "stanford_online_products",
+        "stl10",
+        "sun397",
+        "svhn_cropped",
+        "tf_flowers",
+        "uc_merced",
+        "vgg_face2",
+        "visual_domain_decathlon",
     ]
-    datasets_to_load = ["caltech101"]
     future_datasets = list()
     with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
         for dataset in datasets_to_load:
@@ -140,15 +147,25 @@ def test_load_tfds():
                 for split in ds:
                     try:
                         if not check_dataset_exists(dataset + "_" + split):
-                            ds = tfds.load(dataset, split=split).batch(1000)
-                            print("Trying to convert dataset: " + str(dataset) + ", with split: " + str(split))
+                            ds = tfds.load(dataset, split=split)
+                            print(
+                                "Trying to convert dataset: "
+                                + str(dataset)
+                                + ", with split: "
+                                + str(split)
+                            )
                             future = executor.submit(add_tfds, ds, dataset, split)
                             future_datasets.append(future)
                             # add_tfds(ds, dataset, split)
                             break
                             # print("Successfully loaded dataset")
                         else:
-                            print("dataset already exists with name: " + dataset + " and split: " + split)
+                            print(
+                                "dataset already exists with name: "
+                                + dataset
+                                + " and split: "
+                                + split
+                            )
                     except Exception as e:
                         print(e)
             except Exception as e:
